@@ -2,7 +2,9 @@
 
 > Procedimiento operativo completo: desde la VM vacía en Google Cloud hasta
 > la API en producción, con despliegue automático desde GitHub y rollback
-> en segundos si algo sale mal.
+> en segundos si algo sale mal. Sin Docker, sin Cloud Run — todo corre
+> directo sobre Windows Server 2022 e IIS, para evitar cobros por
+> servicios administrados que no se están usando activamente.
 
 Este documento reemplaza y amplía la guía de despliegue anterior: agrega
 releases inmutables, backup y migración automatizados con verificación,
@@ -206,23 +208,26 @@ de cada migración con `mysqldump`.
    mysqldump --version
    ```
 
-### 4.6 Clonar el repositorio de scripts y preparar la estructura
+### 4.6 Clonar el repositorio y preparar la estructura
 
 ```powershell
-git clone <url-del-repositorio> C:\zl-integration-api-repo-temporal
-cd C:\zl-integration-api-repo-temporal
+git clone <url-del-repositorio> C:\zl-integration-api\repository
+cd C:\zl-integration-api\repository
 .\scripts\configurar_estructura.ps1 -RaizDespliegue "C:\zl-integration-api"
 ```
 
 Este script crea `C:\zl-integration-api\{releases, shared, shared\backups,
-logs}` y copia `.env.example` a `shared\.env`. La carpeta temporal del
-clon inicial ya no se necesita después de este paso — `desplegar.ps1
--RepoUrl ...` clona su propia copia técnica en
-`C:\zl-integration-api\repository` la primera vez que se ejecuta.
-
-```powershell
-Remove-Item -Recurse -Force C:\zl-integration-api-repo-temporal
-```
+logs}` y copia `.env.example` a `shared\.env`. A diferencia de una
+preparación desechable, este clon en `C:\zl-integration-api\repository`
+**se conserva** — es el mismo clon técnico que después usan
+`instalar_servicio_windows.ps1` (sección 5.2), `desplegar.ps1` (sección
+5.3 en adelante) y `rollback.ps1` (sección 13.2): los tres se ejecutan con
+`cd C:\zl-integration-api\repository` primero, así que esa carpeta debe
+existir *antes* de llegar a la sección 5. `desplegar.ps1` detecta que
+`repository\` ya existe y hace `git fetch` en vez de clonar de nuevo, así
+que seguir pasándole `-RepoUrl` en el primer despliegue (sección 5.3) no
+hace nada — es inofensivo dejarlo por costumbre, pero ya no es
+obligatorio en ningún punto del procedimiento.
 
 ---
 
@@ -530,8 +535,10 @@ aprobación manual configurada, tras aprobarla), despliega solo.
 cd C:\zl-integration-api\repository
 .\scripts\desplegar.ps1 -Commit <sha>
 ```
-(`-RepoUrl` ya no hace falta pasarlo salvo la primera vez — el repo ya
-está clonado en `repository\`).
+(`-RepoUrl` es opcional en todo el procedimiento — `repository\` ya quedó
+clonado en la sección 4.6. El parámetro solo importa si `repository\` no
+existiera por algún motivo, por ejemplo al reconstruir el servidor desde
+cero).
 
 En ambos casos, si algo fallara **después** de que el swap ya se hizo, el
 propio script revierte solo (sección 13.1) — no hace falta ni un `nssm
