@@ -93,13 +93,14 @@ def health_check():
     """
     mysql_disponible = verificar_conexion_mysql()
     prosoft_disponible = verificar_conexion_prosoft()
-    saludable = mysql_disponible and prosoft_disponible
+    # saludable = mysql_disponible and prosoft_disponible
+    saludable = mysql_disponible
 
     return JSONResponse(
         status_code=200 if saludable else 503,
         content={
             "status": "ok" if saludable else "degradado",
             "mysql": "arriba" if mysql_disponible else "no_disponible",
-            "prosoft": "arriba" if prosoft_disponible else "no_disponible",
+            # "prosoft": "arriba" if prosoft_disponible else "no_disponible",
         },
     )
