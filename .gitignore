@@ -1,0 +1,35 @@
+# Variables de entorno y credenciales
+.env
+.env.*
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Artefactos de Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Herramientas de calidad de código y pruebas
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editores e IDEs
+.vscode/
+.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs locales
+*.log
+logs/

@@ -1,0 +1,60 @@
+# CI/CD de zl-integration-api.
+#
+# - "pruebas" corre en TODO push y pull request, en un runner de GitHub
+#   (gratuito, ubuntu-latest) porque las pruebas no dependen de Windows
+#   ni de conexión real a MySQL/Prosoft (usan una base en memoria).
+# - "desplegar" corre SOLO en push a main, después de que "pruebas" pase,
+#   en un runner propio (self-hosted) registrado en la VM de Windows.
+#   No se necesita SSH, WinRM ni abrir ningún puerto nuevo para esto: el
+#   runner se conecta por salida hacia GitHub, nunca al revés.
+# - El "environment: produccion" exige aprobación manual si se configura
+#   con "required reviewers" en GitHub (Settings > Environments) — ver
+#   DESPLIEGUE_WINDOWS_SERVER_2022.md, sección de CI/CD.
+
+name: CI/CD zl-integration-api
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: despliegue-produccion
+  cancel-in-progress: false
+
+jobs:
+  pruebas:
+    name: Pruebas y lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias (incluye dev)
+        run: pip install ".[dev]"
+
+      - name: Lint (ruff)
+        run: ruff check app/ test/
+
+      - name: Pruebas
+        run: pytest -q
+
+  desplegar:
+    name: Desplegar a producción
+    needs: pruebas
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: [self-hosted, windows, zl-integration-api]
+    environment: produccion
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Desplegar release ${{ github.sha }}
+        shell: pwsh
+        run: |
+          .\scripts\desplegar.ps1 `
+            -Commit "${{ github.sha }}" `
+            -RepoUrl "https://github.com/${{ github.repository }}.git"
