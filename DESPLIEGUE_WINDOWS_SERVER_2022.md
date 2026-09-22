@@ -229,6 +229,12 @@ que seguir pasándole `-RepoUrl` en el primer despliegue (sección 5.3) no
 hace nada — es inofensivo dejarlo por costumbre, pero ya no es
 obligatorio en ningún punto del procedimiento.
 
+
+```powershell
+cd C:\zl-integration-api\repository
+.\scripts\instalar_servicio.ps1
+```
+
 ---
 
 ## 5. Configurar credenciales y registrar el servicio
